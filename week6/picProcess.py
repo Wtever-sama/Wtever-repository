@@ -2,6 +2,8 @@ from PIL import Image
 from PIL import ImageFilter
 import numpy as np
 import matplotlib.pyplot as plt
+from volcenginesdkarkruntime import Ark
+###第一题##################################################################################
 class ImageProcessor:
     def __init__(self, imageData = None):
         self.imageData = imageData # 一个dic，存储修改的参数
@@ -19,7 +21,7 @@ class imp1(ImageProcessor):
     def __init__(self, imageData):
         super().__init__(imageData)# 调用基类的构造函数
     def process(self):
-        
+###第二题##################################################################################       
         # 对图片进行灰度化处理
         no_color = self.image.convert('L')
         no_color.show()
@@ -44,3 +46,4 @@ if __name__ == '__main__':
     processor = imp1(imageData)
     processor.process()
         
+"/Users/wtsama/Documents/code/code2/R"
