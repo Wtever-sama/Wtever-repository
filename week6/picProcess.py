@@ -2,7 +2,7 @@ from PIL import Image
 from PIL import ImageFilter
 import numpy as np
 import matplotlib.pyplot as plt
-from volcenginesdkarkruntime import Ark
+#from volcenginesdkarkruntime import Ark
 ###第一题##################################################################################
 class ImageProcessor:
     def __init__(self, imageData = None):
@@ -37,7 +37,7 @@ class imp1(ImageProcessor):
         edge.show()
 
 if __name__ == '__main__':
-    image_path = '/Users/wtsama/Documents/code/Wtever-repository/week6/lx.jpg'
+    image_path = '/Users/wtsama/Downloads/kaworu.jpg'
     imageData = {
                 'image_path': image_path,
                  'window':(15,15,200,200),
@@ -45,5 +45,5 @@ if __name__ == '__main__':
                  }
     processor = imp1(imageData)
     processor.process()
-        
-"/Users/wtsama/Documents/code/code2/R"
+
+###第三题##################################################################################
