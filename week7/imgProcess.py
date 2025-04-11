@@ -10,6 +10,9 @@ import os
 from openai import OpenAI
 
 import json
+import sys
+from http import HTTPStatus
+
 class ImageQueryError(Exception):
     def __init__(self, message = 'image is none'):
         super().__init__(message)
@@ -26,6 +29,7 @@ class ImageQuery:
         file_path = self.file_path
         try:
             image = Image.open(file_path)
+            print(f"{file_path} format: ",image.format)
             return image
         except FileNotFoundError as e:
             print(f"{file_path} not found: {e}")
@@ -80,71 +84,84 @@ class ImageQuery:
         except ImageQueryError as e:
             print(f"ImageQueryError: {e}")
             
-    def get_cosine_similarity(self, other_image_path):
-        image_path = self.file_path
-        image_path2 = other_image_path
-        with open(image_path, "rb") as imf:
-            base64_image = base64.b64encode(imf.read()).decode("utf-8")
-        with open(image_path2, "rb") as imf2:
-            base64_image2 = base64.b64encode(imf2.read()).decode("utf-8")
+    def get_cosine_similarity(self, other_image_path, other_image_query):
+        try:
+            with open(self.file_path, "rb") as imf:
+                base64_image = base64.b64encode(imf.read()).decode("utf-8")
+            with open(other_image_path, "rb") as imf2:
+                base64_image2 = base64.b64encode(imf2.read()).decode("utf-8")
 
-        # image_format = sys.argv[2]  # 根据实际情况修改，比如png, jpg、bmp 等
-        # image_data = f"data:image/{image_format};base64,{base64_image}"
-
-        # 输入数据
-        inputs = [{'image': image_data}]
+            # 获取文件实际格式
+            image = self.image
+            image2 = other_image_query.image
+            image_format = image.format.lower()
+            image_format2 = image2.format.lower()
             
-        client = dashscope.MultiModalEmbedding.call(# 将输入的图片或其他多模态数据传递给指定的模型，生成对应的嵌入向量。
-            # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
-            api_key=os.getenv("DASHSCOPE_API_KEY"), 
-            model="qwen-vl-max-latest",
-            input=input_image
-            # base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        )
-        completion = client.chat.completions.create(
-            messages=[
-                {
-                    "role": "system",
-                    "content": [{"type":"text","text": "You are a helpful assistant."}]},
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            # 需要注意，传入Base64，图像格式（即image/{format}）需要与支持的图片列表中的Content Type保持一致。"f"是字符串格式化的方法。
-                            # PNG图像：  f"data:image/png;base64,{base64_image}"
-                            # JPEG图像： f"data:image/jpeg;base64,{base64_image}"
-                            # WEBP图像： f"data:image/webp;base64,{base64_image}"
-                            "image_url": {"url": f"data:image/png;base64,{base64_image}"}, 
-                        },
-                        {
-                            "type": "image_url",
-                            # 需要注意，传入Base64，图像格式（即image/{format}）需要与支持的图片列表中的Content Type保持一致。"f"是字符串格式化的方法。
-                            # PNG图像：  f"data:image/png;base64,{base64_image}"
-                            # JPEG图像： f"data:image/jpeg;base64,{base64_image}"
-                            # WEBP图像： f"data:image/webp;base64,{base64_image}"
-                            "image_url": {"url": f"data:image/png;base64,{base64_image2}"}, 
-                        },
-                        {"type": "text", "text": "图中描绘的是什么?"},
-                    ],
-                }
-            ],
-        )
-        print(completion.choices[0].message.content)
-        print(json.dumps(client.output, ensure_ascii=False, indent=4))
-        
+            image_data = f"data:image/{image_format};base64,{base64_image}"
+            image_data2 = f"data:image/{image_format2};base64,{base64_image2}"
+            
+            #print("Generated image_url:", image_data)
+            # 输入数据
+            inputs = [image_data, image_data2]
+            # inputs2 = [{'image2': image_data2}]
+                
+            client = dashscope.MultiModalEmbedding.call(# 将输入的图片或其他多模态数据传递给指定的模型，生成对应的嵌入向量。
+                # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
+                api_key=os.getenv("DASHSCOPE_API_KEY"), 
+                model="multimodal-embedding-v1",
+                input=inputs,
+                # base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            )
+            
+            if client.status_code == HTTPStatus.OK:
+                #save file
+                with open("output.json", "w") as f:
+                    json.dump(client.output, f, ensure_ascii=False, indent=4)
+                print('file has been processed')
+            #else:
+                #print(f"Error: {client.message}")
+                
+        except FileNotFoundError as e:
+            print(e)
+        except FileExistsError as e:
+            print(e)
+        except Exception as e:
+            print(f"exception error: {e}")
+            
 if __name__ == "__main__":
     file_path = "test.png"
     file_path2 = "test2.jpg"
     imageQuery = ImageQuery(file_path)
     imageQuery2 = ImageQuery(file_path2)
     
-    difference = imageQuery.pixel_difference(imageQuery2)
-    print("pixel difference:",difference)
+    #difference = imageQuery.pixel_difference(imageQuery2)
+    #print("pixel difference:",difference)
     
-    imageQuery.get_histogram()
+    #imageQuery.get_histogram()
     
-    imageQuery.get_cosine_similarity(file_path2)
+    imageQuery.get_cosine_similarity(file_path2, imageQuery2)
     
-#看demo 中对顶层异常的阐述，主要编写两个异常类
-    
+
+'''
+import dashscope
+import base64
+import json
+from http import HTTPStatus
+# 读取图片并转换为Base64,实际使用中请将xxx.png替换为您的图片文件名或路径
+image_path = "xxx.png"
+with open(image_path, "rb") as image_file:
+    # 读取文件并转换为Base64
+    base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+# 设置图像格式
+image_format = "png"  # 根据实际情况修改，比如jpg、bmp 等
+image_data = f"data:image/{image_format};base64,{base64_image}"
+# 输入数据
+inputs = [{'image': image_data}]
+
+# 调用模型接口
+resp = dashscope.MultiModalEmbedding.call(
+    model="multimodal-embedding-v1",
+    input=inputs
+)
+if resp.status_code == HTTPStatus.OK:
+    print(json.dumps(resp.output, ensure_ascii=False, indent=4))'''
