@@ -17,6 +17,3 @@ print("余弦相似度(test.jpg, test2.jpg):", similarity[0][0])
 
 similarity_2 = cosine_similarity(vec1, vec3)
 print("余弦相似度(test.jpg, test3.jpeg):", similarity_2[0][0])
-
-# 余弦相似度(test.jpg, test2.jpg): 0.6577115540344478
-# 余弦相似度(test.jpg, test3.jpeg): 0.14619342682029168
